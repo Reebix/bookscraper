@@ -1,5 +1,6 @@
 import logging
 import sys
+from concurrent.futures.thread import ThreadPoolExecutor
 from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
 import npyscreen
@@ -87,8 +88,9 @@ class Scraper:
 class MainForm(npyscreen.ActionForm):
     def create(self):
         self.url = self.add(npyscreen.TitleText, name="URL: ")
+        self.list = self.add(npyscreen.TitleFilenameCombo, name="List(Optional): ")
         self.output = self.add(npyscreen.TitleFilenameCombo, name="Output: ")
-        self.progress = self.add(npyscreen.TitleFixedText, name="Current: ", value="", relx=2, rely=5, editable=False)
+        self.progress = self.add(npyscreen.TitleFixedText, name="Current: ", value="", relx=2, rely=6, editable=False)
 
     def on_cancel(self):
         self.parentApp.switchForm(None)
@@ -96,8 +98,18 @@ class MainForm(npyscreen.ActionForm):
     def on_ok(self):
         self.parentApp.setNextForm(None)
         self.parentApp.switchForm(None)
-        scraper = Scraper(self.url.value, self.output.value, self.progress)
-        scraper.scrape()
+
+        if self.list.value:
+            with open(self.list.value, 'r') as f:
+                urls = f.readlines()
+                for url in urls:
+                    url = url.strip()
+                    if url:
+                        scraper = Scraper(url, self.output.value, self.progress)
+                        scraper.scrape()
+        else:
+            scraper = Scraper(self.url.value, self.output.value, self.progress)
+            scraper.scrape()
 
 class ScraperApp(npyscreen.NPSAppManaged):
     def onStart(self):
