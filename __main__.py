@@ -10,8 +10,6 @@ from common.common import check_internet_connection, clear_screen
 
 baseurl = "https://www.kostenlosonlinelesen.net"
 
-
-
 class Scraper:
     def __init__(self, url, output, progress):
         self.url = url
@@ -30,18 +28,16 @@ class Scraper:
         title = soup.find('h1').text
         for br in soup.find_all('br'):
             br.replace_with('\n')
-        text += soup.find(class_ = 'txt-cnt').text
+        text += soup.find(class_='txt-cnt').text
 
         next = soup.find_all('a')
 
         for i in next:
-            # try parse
             try:
                 if int(i.text) > last:
                     last = int(i.text)
             except:
                 continue
-
 
         for i in next:
             if i.text == '»':
@@ -59,7 +55,7 @@ class Scraper:
             soup = BeautifulSoup(webpage, 'html.parser')
             for br in soup.find_all('br'):
                 br.replace_with('\n')
-            text += soup.find(class_ = 'txt-cnt').text
+            text += soup.find(class_='txt-cnt').text
 
             next = soup.find_all('a')
             for br in soup.find_all('br'):
@@ -75,54 +71,30 @@ class Scraper:
             if not found:
                 break
 
+        self.create_epub(title, text)
+        print(f"\n\nScraped {self.url} to {self.output}/{title}.epub")
 
-
+    def create_epub(self, title, text):
         book = epub.EpubBook()
-        book.set_identifier("id123456")
         book.set_title(title)
-        book.set_language('de')
+        book.set_language('en')
+        book.add_author('Unknown')
 
-        book.add_author('Terry Pratchett')
+        chapter = epub.EpubHtml(title='Chapter 1', file_name='chap_01.xhtml', lang='en')
+        chapter.content = f'<h1>{title}</h1><p>{text}</p>'
+        book.add_item(chapter)
 
-        pages = text.split('                    ')
-
-        text = epub.EpubHtml(title=title, file_name=f'chap_1.xhtml', lang='hr')
-        text.content = text
-        book.add_item(text)
-
-        # for i in range(len(pages)):
-        #     text = epub.EpubHtml(title=title, file_name=f'chap_{i}.xhtml', lang='hr')
-        #     text.content = pages[i]
-        #     book.add_item(text)
-
-
-        book.toc = (epub.Link('chap_1.xhtml', 'Introduction', 'intro'),
-                    (epub.Section('Simple book'), (text, )))
+        book.toc = (epub.Link('chap_01.xhtml', 'Chapter 1', 'chap_01'),)
+        book.spine = ['nav', chapter]
         book.add_item(epub.EpubNcx())
-        # book.add_item(epub.EpubNav())
+        book.add_item(epub.EpubNav())
 
-        book.spine = ['nav', text]
-
-        style = 'BODY {color: white;}'
-        nav_css = epub.EpubItem(uid="style_nav", file_name="style/nav.css", media_type="text/css", content=style)
-
-        book.add_item(nav_css)
-
-        epub.write_epub(f"{self.output}/{title}.epub", book, {})
-
-
-
-        print(f"\n\nScraped {self.url} to {self.output}/{title}.txt")
-
-
+        epub.write_epub(f'{self.output}/{title}.epub', book, {})
 
 class MainForm(npyscreen.ActionForm):
     def create(self):
-        # self.add(npyscreen.TitleSelectOne, max_height=4, name="Action",
-        #                                 values=["Scrape"], scroll_exit=True)
         self.url = self.add(npyscreen.TitleText, name="URL: ")
         self.output = self.add(npyscreen.TitleFilenameCombo, name="Output: ")
-
         self.progress = self.add(npyscreen.TitleFixedText, name="Current: ", value="", relx=2, rely=5, editable=False)
 
     def on_cancel(self):
@@ -130,28 +102,21 @@ class MainForm(npyscreen.ActionForm):
 
     def on_ok(self):
         self.parentApp.setNextForm(None)
-
         self.parentApp.switchForm(None)
-
         scraper = Scraper(self.url.value, self.output.value, self.progress)
         scraper.scrape()
-
 
 class ScraperApp(npyscreen.NPSAppManaged):
     def onStart(self):
         self.addForm("MAIN", MainForm, name="Scraper")
 
-
 def main():
     if not check_internet_connection():
         clear_screen()
-
         logging.disable(logging.CRITICAL)
-
         sys.exit()
     app = ScraperApp()
     app.run()
-
 
 if __name__ == '__main__':
     main()
