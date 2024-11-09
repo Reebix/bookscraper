@@ -1,6 +1,5 @@
 import logging
 import sys
-from ast import parse
 from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
 import npyscreen
@@ -26,9 +25,7 @@ class Scraper:
 
         soup = BeautifulSoup(webpage, 'html.parser')
         title = soup.find('h1').text
-        for br in soup.find_all('br'):
-            br.replace_with('\n')
-        text += soup.find(class_='txt-cnt').text
+        text += str(soup.find(class_='txt-cnt'))
 
         next = soup.find_all('a')
 
@@ -53,19 +50,15 @@ class Scraper:
             webpage = urlopen(req).read()
 
             soup = BeautifulSoup(webpage, 'html.parser')
-            for br in soup.find_all('br'):
-                br.replace_with('\n')
-            text += soup.find(class_='txt-cnt').text
+            text += str(soup.find(class_='txt-cnt'))
 
             next = soup.find_all('a')
-            for br in soup.find_all('br'):
-                br.replace_with('\n')
             found = False
 
             for i in next:
                 if i.text == '»':
                     next = i['href']
-                    found = False
+                    found = True
                     break
 
             if not found:
@@ -77,14 +70,14 @@ class Scraper:
     def create_epub(self, title, text):
         book = epub.EpubBook()
         book.set_title(title)
-        book.set_language('en')
-        book.add_author('Unknown')
+        book.set_language('de')
+        book.add_author('Terry Pratchett')
 
         chapter = epub.EpubHtml(title='Chapter 1', file_name='chap_01.xhtml', lang='en')
-        chapter.content = f'<h1>{title}</h1><p>{text}</p>'
+        chapter.content = f'<h1>{title}</h1>{text}'
         book.add_item(chapter)
 
-        book.toc = (epub.Link('chap_01.xhtml', 'Chapter 1', 'chap_01'),)
+        # book.toc = (epub.Link('chap_01.xhtml', 'Chapter 1', 'chap_01'),)
         book.spine = ['nav', chapter]
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
