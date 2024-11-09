@@ -83,6 +83,9 @@ class Scraper:
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
 
+
+        title = title.replace(":", " ").replace("?", " ").replace("!", " ").replace("/", " ").replace("\\", " ").replace("*", " ").replace("<", " ").replace(">", " ").replace("|", " ")
+
         epub.write_epub(f'{self.output}/{title}.epub', book, {})
 
 class MainForm(npyscreen.ActionForm):
